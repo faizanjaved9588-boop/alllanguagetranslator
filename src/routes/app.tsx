@@ -174,6 +174,7 @@ function Grammar() {
   const [text, setText] = useState("");
   const [fb, setFb] = useState("");
   const [busy, setBusy] = useState(false);
+  const mic = useRecognition(useCallback((t: string) => setText(t), []));
   const go = async () => {
     setBusy(true);
     try {
@@ -185,8 +186,14 @@ function Grammar() {
   return (
     <div className="rounded-xl border bg-card p-4">
       <div className="mb-3"><LangSelect value={lang} onChange={setLang} /></div>
-      <Textarea rows={4} value={text} onChange={(e) => setText(e.target.value)} placeholder="Write a sentence to check…" maxLength={2000} />
-      <Button className="mt-3" disabled={busy || !text.trim()} onClick={go}>{busy && <Loader2 className="h-4 w-4 animate-spin" />} Check grammar</Button>
+      <Textarea rows={4} value={mic.status === "listening" ? mic.live : text} readOnly={mic.status === "listening"} onChange={(e) => setText(e.target.value)} placeholder="Write or speak a sentence to check…" maxLength={2000} />
+      <div className="mt-3 flex flex-wrap gap-2">
+        {mic.status === "listening"
+          ? <Button variant="destructive" onClick={mic.stop}><Square className="h-4 w-4" /> Stop</Button>
+          : <Button variant="secondary" onClick={() => mic.start(lang, text)}><Mic className="h-4 w-4" /> Speak</Button>}
+        <Button disabled={busy || !text.trim()} onClick={go}>{busy && <Loader2 className="h-4 w-4 animate-spin" />} Check grammar</Button>
+      </div>
+      {mic.error && <p className="mt-1 text-sm text-destructive">{mic.error}</p>}
       <Feedback text={fb} />
     </div>
   );
@@ -200,9 +207,11 @@ function Chat() {
   const [busy, setBusy] = useState(false);
   const end = useRef<HTMLDivElement>(null);
   const tts = useTTS();
+  const mic = useRecognition(useCallback((t: string) => setInput(t), []));
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from("conversation_history").select("role,content").eq("language", lang).order("created_at").limit(50);
+      const { data, error } = await supabase.from("conversation_history").select("role,content").eq("language", lang).order("created_at").limit(50);
+      if (error) { toast.error("Couldn't load past messages: " + error.message); setMsgs([]); return; }
       setMsgs((data as Msg[]) ?? []);
     })();
   }, [lang]);
@@ -235,9 +244,13 @@ function Chat() {
         <div ref={end} />
       </div>
       <form className="mt-3 flex gap-2" onSubmit={(e) => { e.preventDefault(); send(); }}>
-        <Input autoFocus value={input} onChange={(e) => setInput(e.target.value)} placeholder="Type your message…" maxLength={2000} />
+        <Input autoFocus value={mic.status === "listening" ? mic.live : input} readOnly={mic.status === "listening"} onChange={(e) => setInput(e.target.value)} placeholder="Type or speak your message…" maxLength={2000} />
+        {mic.status === "listening"
+          ? <Button type="button" variant="destructive" size="icon" onClick={mic.stop}><Square className="h-4 w-4" /></Button>
+          : <Button type="button" variant="secondary" size="icon" onClick={() => mic.start(lang, input)}><Mic className="h-4 w-4" /></Button>}
         <Button disabled={busy}><Send className="h-4 w-4" /></Button>
       </form>
+      {mic.error && <p className="mt-1 text-sm text-destructive">{mic.error}</p>}
     </div>
   );
 }
