@@ -146,7 +146,7 @@ function Practice() {
       setFb(r.text);
       const user_id = await uid();
       const { data } = await supabase.from("speaking_sessions").insert({ user_id, language: lang, target_sentence: target, transcript: said }).select("id").single();
-      await supabase.from("learning_feedback").insert({ user_id, session_id: data?.id, kind: "speaking", input_text: said, feedback: r.text });
+      await supabase.from("learning_feedback").insert({ user_id, session_id: data?.id ?? null, kind: "speaking", input_text: said, feedback: r.text });
     } catch (e: any) { toast.error(e.message); } finally { setBusy(false); }
   }, [target, lang]);
   const mic = useRecognition(evaluate);
@@ -270,9 +270,18 @@ function Progress() {
   const [c, setC] = useState<Record<string, number>>({});
   useEffect(() => {
     (async () => {
-      const tables = ["translation_history", "speaking_sessions", "learning_feedback", "conversation_history"];
-      const res = await Promise.all(tables.map((t) => supabase.from(t).select("id", { count: "exact", head: true })));
-      setC(Object.fromEntries(tables.map((t, i) => [t, res[i]?.count ?? 0])));
+      const [th, ss, lf, ch] = await Promise.all([
+        supabase.from("translation_history").select("id", { count: "exact", head: true }),
+        supabase.from("speaking_sessions").select("id", { count: "exact", head: true }),
+        supabase.from("learning_feedback").select("id", { count: "exact", head: true }),
+        supabase.from("conversation_history").select("id", { count: "exact", head: true }),
+      ]);
+      setC({
+        translation_history: th.count ?? 0,
+        speaking_sessions: ss.count ?? 0,
+        learning_feedback: lf.count ?? 0,
+        conversation_history: ch.count ?? 0,
+      });
     })();
   }, []);
   const items = [["Translations", c["translation_history"]], ["Speaking sessions", c["speaking_sessions"]], ["Feedback received", c["learning_feedback"]], ["Chat messages", c["conversation_history"]]];
