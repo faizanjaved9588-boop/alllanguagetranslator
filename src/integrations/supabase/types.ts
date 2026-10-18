@@ -14,7 +14,224 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      conversation_history: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          language: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          language: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          language?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      learning_feedback: {
+        Row: {
+          created_at: string
+          feedback: string
+          id: string
+          input_text: string | null
+          kind: string
+          session_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          feedback: string
+          id?: string
+          input_text?: string | null
+          kind: string
+          session_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          feedback?: string
+          id?: string
+          input_text?: string | null
+          kind?: string
+          session_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learning_feedback_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "speaking_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          learning_language: string | null
+          native_language: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id: string
+          learning_language?: string | null
+          native_language?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          learning_language?: string | null
+          native_language?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      saved_vocabulary: {
+        Row: {
+          created_at: string
+          example: string | null
+          id: string
+          language: string | null
+          meaning: string | null
+          review_status: string
+          user_id: string
+          word: string
+        }
+        Insert: {
+          created_at?: string
+          example?: string | null
+          id?: string
+          language?: string | null
+          meaning?: string | null
+          review_status?: string
+          user_id: string
+          word: string
+        }
+        Update: {
+          created_at?: string
+          example?: string | null
+          id?: string
+          language?: string | null
+          meaning?: string | null
+          review_status?: string
+          user_id?: string
+          word?: string
+        }
+        Relationships: []
+      }
+      speaking_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          language: string
+          target_sentence: string
+          transcript: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          language: string
+          target_sentence: string
+          transcript?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          language?: string
+          target_sentence?: string
+          transcript?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      translation_history: {
+        Row: {
+          created_at: string
+          id: string
+          original_text: string
+          provider: string | null
+          source_language: string | null
+          status: string
+          target_language: string
+          translated_text: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          original_text: string
+          provider?: string | null
+          source_language?: string | null
+          status?: string
+          target_language: string
+          translated_text?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          original_text?: string
+          provider?: string | null
+          source_language?: string | null
+          status?: string
+          target_language?: string
+          translated_text?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_progress: {
+        Row: {
+          learning_goal: string | null
+          practice_count: number
+          summary: string | null
+          translations_count: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          learning_goal?: string | null
+          practice_count?: number
+          summary?: string | null
+          translations_count?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          learning_goal?: string | null
+          practice_count?: number
+          summary?: string | null
+          translations_count?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
