@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable/index";
 import { useAuth } from "@/hooks/useAuth";
 
 export const Route = createFileRoute("/auth")({
@@ -20,13 +21,12 @@ export const Route = createFileRoute("/auth")({
   component: Auth,
 });
 
-type Provider = "google" | "apple" | "azure" | "github";
+type Provider = "google" | "apple" | "microsoft";
 
 const PROVIDER_LABELS: Record<Provider, string> = {
   google: "Google",
   apple: "Apple",
-  azure: "Microsoft",
-  github: "GitHub",
+  microsoft: "Microsoft",
 };
 
 function ProviderIcon({ provider }: { provider: Provider }) {
@@ -46,19 +46,13 @@ function ProviderIcon({ provider }: { provider: Provider }) {
           <path fill="currentColor" d="M16.6 12.9c0-2.4 2-3.6 2-3.6-1.1-1.6-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.7.9-.8 0-1.9-.9-3.2-.8-1.6 0-3.1 1-4 2.4-1.7 3-0.4 7.3 1.2 9.7.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.2-.8 1.5 0 1.9.8 3.2.8 1.3 0 2.2-1.2 3-2.4.9-1.4 1.3-2.7 1.3-2.8-.1 0-2.5-1-2.5-3.9zM14.1 5.2c.7-.8 1.1-1.9 1-3-1 0-2.2.7-2.9 1.5-.6.7-1.2 1.9-1 3 1.1.1 2.2-.6 2.9-1.5z" />
         </svg>
       );
-    case "azure":
+    case "microsoft":
       return (
         <svg viewBox="0 0 24 24" className="size-4" aria-hidden="true">
           <path fill="#F25022" d="M2 2h9.5v9.5H2z" />
           <path fill="#7FBA00" d="M12.5 2H22v9.5h-9.5z" />
           <path fill="#00A4EF" d="M2 12.5h9.5V22H2z" />
           <path fill="#FFB900" d="M12.5 12.5H22V22h-9.5z" />
-        </svg>
-      );
-    case "github":
-      return (
-        <svg viewBox="0 0 24 24" className="size-4" aria-hidden="true">
-          <path fill="currentColor" d="M12 .5C5.6.5.5 5.6.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.7 1.3 3.4 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.4-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 0 1 5.8 0C17.2 4.8 18.2 5 18.2 5c.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.5-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.2c0 .3.2.7.8.6 4.6-1.5 7.9-5.8 7.9-10.9C23.5 5.6 18.4.5 12 .5z" />
         </svg>
       );
   }
@@ -75,14 +69,16 @@ function Auth() {
   const [busy, setBusy] = useState(false);
   const { session } = useAuth();
   const nav = useNavigate();
+
+  // Social sign-in returns here with a live session, so the studio is one step away.
   useEffect(() => { if (session) nav({ to: "/app" }); }, [session, nav]);
 
   const finish = (error: { message: string } | null) => {
     setBusy(false);
     if (error) {
       toast.error(
-        /provider/i.test(error.message)
-          ? `This sign-up option isn't switched on yet. Turn it on in your Supabase dashboard under Authentication → Sign In / Up. (${error.message})`
+        /provider|unsupported|not enabled|disabled/i.test(error.message)
+          ? "This sign-in option isn't switched on yet. Turn it on under More → Users → Auth settings."
           : error.message
       );
       return false;
@@ -96,7 +92,7 @@ function Auth() {
     const { data, error } =
       mode === "in"
         ? await supabase.auth.signInWithPassword({ email, password })
-        : await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin + "/app" } });
+        : await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin + "/auth" } });
     if (!finish(error)) return;
     if (mode === "up" && !data.session) toast.success("Check your email to confirm your account.");
   };
@@ -119,12 +115,16 @@ function Auth() {
 
   const signInWithProvider = async (provider: Provider) => {
     setBusy(true);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: { redirectTo: window.location.origin + "/app" },
+    const result = await lovable.auth.signInWithOAuth(provider, {
+      redirect_uri: `${window.location.origin}/auth`,
     });
-    // On success the browser redirects away, so only handle failure here.
-    finish(error);
+    if (result.error) {
+      finish(result.error);
+      return;
+    }
+    if (result.redirected) return; // the browser is on its way to the provider
+    // Tokens arrived and the session is already set — the effect above opens the studio.
+    setBusy(false);
   };
 
   return (
@@ -138,7 +138,7 @@ function Auth() {
 
         {/* Social sign-in options */}
         <div className="grid gap-2">
-          {(["google", "apple", "azure", "github"] as Provider[]).map((p) => (
+          {(["google", "apple", "microsoft"] as Provider[]).map((p) => (
             <Button
               key={p}
               type="button"

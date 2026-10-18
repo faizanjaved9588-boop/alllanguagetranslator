@@ -29,6 +29,10 @@ npm run dev
 - Tailwind CSS
 
 ## Setup (All Language Translator)
-1. In your Supabase dashboard → SQL Editor, run `db/schema.sql`.
-2. Copy `.env.example` values (Supabase URL + publishable key). `LOVABLE_API_KEY` is provided automatically on Lovable.
-3. Optional: disable "Confirm email" in Supabase Auth for instant sign-in.
+
+The backend is Lovable Cloud: the database tables, sign-in methods and AI access are
+already configured for this project, so there is nothing to run by hand.
+
+- Sign-in methods (email, Google, Apple, Microsoft) are managed under More → Users → Auth settings.
+- Phone (SMS) sign-in needs an SMS provider turned on in the same place before it can send codes.
+- `LOVABLE_API_KEY` for the AI features is provided automatically and is read on the server only.

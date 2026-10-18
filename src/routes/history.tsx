@@ -5,7 +5,7 @@ import { Trash2, Volume2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AppShell } from "@/components/AppShell";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { langName, LANGUAGES } from "@/lib/languages";
 import { useTTS } from "@/hooks/useSpeech";
 

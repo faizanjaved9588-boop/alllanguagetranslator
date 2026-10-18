@@ -26,8 +26,9 @@ function rateLimit(id: string) {
 export const runAI = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => Input.parse(d))
   .handler(async ({ data }) => {
-    const sbUrl = process.env["VITE_SUPABASE_URL"] || "https://zneyxayrtsyjclhedpmg.supabase.co";
-    const sbKey = process.env["VITE_SUPABASE_PUBLISHABLE_KEY"] || "sb_publishable_VKTJzQzqhCmJHtkvAyxmFA_RZrUSo14";
+    const sbUrl = process.env["SUPABASE_URL"];
+    const sbKey = process.env["SUPABASE_PUBLISHABLE_KEY"];
+    if (!sbUrl || !sbKey) throw new Error("The backend isn't configured on the server.");
     const u = await fetch(`${sbUrl}/auth/v1/user`, { headers: { apikey: sbKey, Authorization: `Bearer ${data.token}` } });
     if (!u.ok) throw new Error("Please sign in again.");
     const user = (await u.json()) as { id: string };
