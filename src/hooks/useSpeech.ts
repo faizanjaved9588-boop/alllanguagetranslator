@@ -4,7 +4,7 @@ import { speechCode } from "@/lib/languages";
 export type MicStatus = "idle" | "listening" | "processing" | "completed" | "error";
 
 const BLOCKED_MSG =
-  "Microphone is blocked. Click the lock/tune icon in the address bar, allow the microphone for this site, then try again.";
+  "Microphone is blocked. Allow microphone access in your browser's site settings, then try again. If you are using the embedded preview, open the app in a new tab first.";
 
 function micErrorMessage(err: string): string {
   switch (err) {
@@ -22,93 +22,122 @@ function micErrorMessage(err: string): string {
   }
 }
 
-/** Continuous speech recognition that keeps all final words and auto-restarts until the user stops. */
+/** One cancellable recognition session, shared by every speaking input. */
 export function useRecognition(onDone: (text: string) => void) {
   const [status, setStatus] = useState<MicStatus>("idle");
   const [live, setLive] = useState("");
   const [error, setError] = useState("");
   const rec = useRef<any>(null);
   const finals = useRef("");
+  const interim = useRef("");
   const stopped = useRef(true);
+  const session = useRef(0);
+  const callback = useRef(onDone);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  callback.current = onDone;
 
-  // Stop recognition if the component unmounts mid-listen.
   useEffect(() => () => {
+    session.current += 1;
     stopped.current = true;
-    try { rec.current?.stop(); } catch { /* ignore */ }
+    if (timer.current) clearTimeout(timer.current);
+    try { rec.current?.abort(); } catch { /* already closed */ }
   }, []);
 
   const start = useCallback((lang: string, initial = "") => {
+    if (!stopped.current) return;
+    const id = ++session.current;
+    if (timer.current) clearTimeout(timer.current);
+    try { rec.current?.abort(); } catch { /* already closed */ }
+    rec.current = null;
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    setError("");
+    setLive(initial);
     if (!SR) {
       setError("Voice input isn't supported in this browser. Try Chrome or Edge, or type instead.");
       setStatus("error");
       return;
     }
     finals.current = initial ? initial.trim() + " " : "";
+    interim.current = "";
     stopped.current = false;
-    setError("");
+    let emptyEnds = 0;
+    const fail = (message: string) => {
+      if (session.current !== id || stopped.current) return;
+      stopped.current = true;
+      if (timer.current) clearTimeout(timer.current);
+      setError(message);
+      setStatus("error");
+      const text = (finals.current + interim.current).trim();
+      setLive(text);
+      // Preserve dictated text without submitting a failed recording.
+      try { rec.current?.abort(); } catch { /* already closed */ }
+    };
 
     const launch = () => {
+      if (session.current !== id || stopped.current) return;
       const r = new SR();
       r.lang = lang === "auto" ? navigator.language : speechCode(lang);
       r.continuous = true;
       r.interimResults = true;
       r.onresult = (e: any) => {
-        let interim = "";
+        if (session.current !== id || stopped.current) return;
+        emptyEnds = 0;
+        let pending = "";
         for (let i = e.resultIndex; i < e.results.length; i++) {
           const t = e.results[i][0].transcript;
           if (e.results[i].isFinal) finals.current += t.trim() + " ";
-          else interim += t;
+          else pending += t;
         }
-        setLive((finals.current + interim).trim());
+        interim.current = pending;
+        setLive((finals.current + pending).trim());
       };
       r.onerror = (e: any) => {
-        if (e.error === "no-speech" || e.error === "aborted") return;
-        stopped.current = true;
-        setError(micErrorMessage(e.error));
-        setStatus("error");
+        if (e.error === "no-speech") return;
+        fail(micErrorMessage(e.error));
       };
       r.onend = () => {
-        if (!stopped.current) {
-          // Recognition stops on its own after silences — restart it until the user presses Stop.
-          try { launch(); } catch { /* ignore */ }
-          return;
+        if (session.current !== id || stopped.current) return;
+        // Some browsers end with an interim result instead of a final one.
+        if (interim.current.trim()) {
+          finals.current += interim.current.trim() + " ";
+          interim.current = "";
         }
-        const text = finals.current.trim() || "";
-        setLive(text);
-        setStatus("completed");
-        if (text) onDone(text);
+        if (!stopped.current) {
+          emptyEnds += 1;
+          if (emptyEnds > 3) {
+            fail("No speech was detected. Check your microphone, move closer, and press Speak to try again.");
+          } else {
+            timer.current = setTimeout(launch, 300);
+          }
+        }
       };
       rec.current = r;
       try {
         r.start();
-      } catch {
-        // A previous instance may still be closing; retry once shortly.
-        setTimeout(() => { if (!stopped.current) { try { r.start(); } catch { /* ignore */ } } }, 150);
+      } catch (e) {
+        fail(e instanceof DOMException && e.name === "NotAllowedError"
+          ? BLOCKED_MSG
+          : "The microphone could not start. Close other voice recordings and press Speak to try again.");
       }
     };
 
-    setLive(initial);
     setStatus("listening");
-
-    // Ask for mic permission first so a denial gives a clear message instead of a silent failure.
-    if (navigator.mediaDevices?.getUserMedia) {
-      navigator.mediaDevices.getUserMedia({ audio: true })
-        .then((stream) => { stream.getTracks().forEach((t) => t.stop()); if (!stopped.current) launch(); })
-        .catch(() => {
-          stopped.current = true;
-          setError(BLOCKED_MSG);
-          setStatus("error");
-        });
-    } else {
-      launch();
-    }
-  }, [onDone]);
+    // Start directly from the click: recognition requests its own permission.
+    // A separate getUserMedia request can lose the required user gesture.
+    try { launch(); } catch { fail("The microphone could not start. Press Speak to try again."); }
+  }, []);
 
   const stop = useCallback(() => {
+    if (stopped.current) return;
     stopped.current = true;
-    setStatus((s) => (s === "listening" ? "processing" : s));
+    session.current += 1;
+    if (timer.current) clearTimeout(timer.current);
+    const text = (finals.current + interim.current).trim();
+    setLive(text);
+    setStatus("completed");
     try { rec.current?.stop(); } catch { /* ignore */ }
+    rec.current = null;
+    if (text) callback.current(text);
   }, []);
 
   return { status, live, error, start, stop };
