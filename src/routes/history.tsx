@@ -5,9 +5,8 @@ import { Trash2, Volume2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AppShell } from "@/components/AppShell";
-import { LangSelect } from "@/components/LangSelect";
 import { supabase } from "@/lib/supabase";
-import { langName } from "@/lib/languages";
+import { langName, LANGUAGES } from "@/lib/languages";
 import { useTTS } from "@/hooks/useSpeech";
 
 export const Route = createFileRoute("/history")({
@@ -67,8 +66,8 @@ function History() {
         <Input className="w-48" placeholder="Search…" value={q} onChange={(e) => setQ(e.target.value)} />
         <select className="h-9 rounded-md border bg-card px-2 text-sm" value={lang} onChange={(e) => setLang(e.target.value)}>
           <option value="all">All languages</option>
+          {LANGUAGES.map((l) => <option key={l.code} value={l.code}>{l.name}</option>)}
         </select>
-        {lang !== "all" || true ? <LangSelect value={lang === "all" ? "en" : lang} onChange={setLang} /> : null}
         <Button variant="outline" size="sm" onClick={() => setAsc(!asc)}>{asc ? "Oldest first" : "Newest first"}</Button>
         <Button variant="destructive" size="sm" onClick={clear}>Clear all</Button>
       </div>
