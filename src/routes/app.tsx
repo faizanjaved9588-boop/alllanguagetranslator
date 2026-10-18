@@ -186,8 +186,14 @@ function Grammar() {
   return (
     <div className="rounded-xl border bg-card p-4">
       <div className="mb-3"><LangSelect value={lang} onChange={setLang} /></div>
-      <Textarea rows={4} value={text} onChange={(e) => setText(e.target.value)} placeholder="Write a sentence to check…" maxLength={2000} />
-      <Button className="mt-3" disabled={busy || !text.trim()} onClick={go}>{busy && <Loader2 className="h-4 w-4 animate-spin" />} Check grammar</Button>
+      <Textarea rows={4} value={mic.status === "listening" ? mic.live : text} readOnly={mic.status === "listening"} onChange={(e) => setText(e.target.value)} placeholder="Write or speak a sentence to check…" maxLength={2000} />
+      <div className="mt-3 flex flex-wrap gap-2">
+        {mic.status === "listening"
+          ? <Button variant="destructive" onClick={mic.stop}><Square className="h-4 w-4" /> Stop</Button>
+          : <Button variant="secondary" onClick={() => mic.start(lang, text)}><Mic className="h-4 w-4" /> Speak</Button>}
+        <Button disabled={busy || !text.trim()} onClick={go}>{busy && <Loader2 className="h-4 w-4 animate-spin" />} Check grammar</Button>
+      </div>
+      {mic.error && <p className="mt-1 text-sm text-destructive">{mic.error}</p>}
       <Feedback text={fb} />
     </div>
   );
@@ -203,7 +209,8 @@ function Chat() {
   const tts = useTTS();
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from("conversation_history").select("role,content").eq("language", lang).order("created_at").limit(50);
+      const { data, error } = await supabase.from("conversation_history").select("role,content").eq("language", lang).order("created_at").limit(50);
+      if (error) { toast.error("Couldn't load past messages: " + error.message); setMsgs([]); return; }
       setMsgs((data as Msg[]) ?? []);
     })();
   }, [lang]);
