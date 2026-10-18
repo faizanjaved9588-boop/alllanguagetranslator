@@ -205,16 +205,22 @@ function Chat() {
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadErr, setLoadErr] = useState("");
   const end = useRef<HTMLDivElement>(null);
   const tts = useTTS();
   const mic = useRecognition(useCallback((t: string) => setInput(t), []));
-  useEffect(() => {
-    (async () => {
-      const { data, error } = await supabase.from("conversation_history").select("role,content").eq("language", lang).order("created_at").limit(50);
-      if (error) { toast.error("Couldn't load past messages: " + error.message); setMsgs([]); return; }
-      setMsgs((data as Msg[]) ?? []);
-    })();
+  const load = useCallback(async () => {
+    setLoading(true); setLoadErr("");
+    const { data: u } = await supabase.auth.getUser();
+    if (!u.user) { setLoading(false); setLoadErr("Please sign in to see your saved chats."); setMsgs([]); return; }
+    const { data, error } = await supabase.from("conversation_history").select("role,content")
+      .eq("user_id", u.user.id).eq("language", lang).order("created_at").limit(50);
+    setLoading(false);
+    if (error) { setLoadErr("Couldn't load past messages: " + error.message); setMsgs([]); return; }
+    setMsgs((data as Msg[]) ?? []);
   }, [lang]);
+  useEffect(() => { void load(); }, [load]);
   useEffect(() => end.current?.scrollIntoView({ block: "nearest" }), [msgs]);
   const send = async () => {
     const t = input.trim(); if (!t || busy) return;
@@ -224,9 +230,10 @@ function Chat() {
       const r = await ai({ mode: "chat", text: t, target: lang, history });
       setMsgs((m) => [...m, { role: "assistant", content: r.text }]);
       const user_id = await uid();
-      await supabase.from("conversation_history").insert([
+      const { error } = await supabase.from("conversation_history").insert([
         { user_id, role: "user", content: t, language: lang }, { user_id, role: "assistant", content: r.text, language: lang },
       ]);
+      if (error) toast.error("Chat replied, but couldn't save it: " + error.message);
     } catch (e: any) { toast.error(e.message); setInput(t); setMsgs((m) => m.slice(0, -1)); } finally { setBusy(false); }
   };
   return (
