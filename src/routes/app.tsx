@@ -10,7 +10,7 @@ import { AppShell, getToken } from "@/components/AppShell";
 import { LangSelect } from "@/components/LangSelect";
 import { useRecognition, useTTS } from "@/hooks/useSpeech";
 import { runAI } from "@/lib/ai.functions";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { langName } from "@/lib/languages";
 
 type Search = { text?: string | undefined; target?: string | undefined; translated?: string | undefined };

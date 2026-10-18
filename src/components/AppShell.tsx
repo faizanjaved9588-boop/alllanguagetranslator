@@ -3,7 +3,7 @@ import { useEffect, type ReactNode } from "react";
 import { Languages, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 export function AppShell({ children }: { children: ReactNode }) {
