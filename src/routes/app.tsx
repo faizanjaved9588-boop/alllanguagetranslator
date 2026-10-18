@@ -240,7 +240,11 @@ function Chat() {
     <div className="rounded-xl border bg-card p-4">
       <div className="mb-3 flex items-center gap-2"><span className="text-sm">Practice in</span><LangSelect value={lang} onChange={setLang} /></div>
       <div className="h-96 space-y-3 overflow-y-auto rounded-lg bg-muted p-3">
-        {msgs.length === 0 && <p className="text-sm text-muted-foreground">Say hello in {langName(lang)} to start.</p>}
+        {loading && <p className="text-sm text-muted-foreground">Loading your saved chats…</p>}
+        {!loading && loadErr && (
+          <div className="text-sm text-destructive">{loadErr} <button className="underline" onClick={() => void load()}>Try again</button></div>
+        )}
+        {!loading && !loadErr && msgs.length === 0 && <p className="text-sm text-muted-foreground">Say hello in {langName(lang)} to start.</p>}
         {msgs.map((m, i) => (
           <div key={i} className={m.role === "user" ? "ml-auto max-w-[80%] rounded-lg bg-primary p-3 text-primary-foreground" : "max-w-[80%] whitespace-pre-wrap"}>
             {m.content}
