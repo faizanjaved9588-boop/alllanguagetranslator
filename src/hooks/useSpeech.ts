@@ -71,7 +71,7 @@ export function useTTS() {
     const code = speechCode(lang);
     const u = new SpeechSynthesisUtterance(text);
     u.lang = code;
-    const voice = speechSynthesis.getVoices().find((v) => v.lang.toLowerCase().startsWith(code.split("-")[0]));
+    const voice = speechSynthesis.getVoices().find((v) => v.lang.toLowerCase().startsWith(code.split("-")[0] ?? code));
     if (voice) u.voice = voice;
     setMsg(voice || speechSynthesis.getVoices().length === 0 ? "" : `No ${code} voice installed — the browser default voice is used.`);
     u.onend = () => setState("idle");

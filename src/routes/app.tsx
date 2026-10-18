@@ -13,10 +13,10 @@ import { runAI } from "@/lib/ai.functions";
 import { supabase } from "@/lib/supabase";
 import { langName } from "@/lib/languages";
 
-type Search = { text?: string; target?: string; translated?: string };
+type Search = { text?: string | undefined; target?: string | undefined; translated?: string | undefined };
 export const Route = createFileRoute("/app")({
   validateSearch: (s: Record<string, unknown>): Search => ({
-    text: s.text as string | undefined, target: s.target as string | undefined, translated: s.translated as string | undefined,
+    text: s["text"] as string | undefined, target: s["target"] as string | undefined, translated: s["translated"] as string | undefined,
   }),
   head: () => ({
     meta: [

@@ -26,14 +26,14 @@ function rateLimit(id: string) {
 export const runAI = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => Input.parse(d))
   .handler(async ({ data }) => {
-    const sbUrl = process.env.VITE_SUPABASE_URL || "https://zneyxayrtsyjclhedpmg.supabase.co";
-    const sbKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || "sb_publishable_VKTJzQzqhCmJHtkvAyxmFA_RZrUSo14";
+    const sbUrl = process.env["VITE_SUPABASE_URL"] || "https://zneyxayrtsyjclhedpmg.supabase.co";
+    const sbKey = process.env["VITE_SUPABASE_PUBLISHABLE_KEY"] || "sb_publishable_VKTJzQzqhCmJHtkvAyxmFA_RZrUSo14";
     const u = await fetch(`${sbUrl}/auth/v1/user`, { headers: { apikey: sbKey, Authorization: `Bearer ${data.token}` } });
     if (!u.ok) throw new Error("Please sign in again.");
     const user = (await u.json()) as { id: string };
     rateLimit(user.id);
 
-    const key = process.env.LOVABLE_API_KEY;
+    const key = process.env["LOVABLE_API_KEY"];
     if (!key) throw new Error("AI is not configured: LOVABLE_API_KEY is missing on the server.");
 
     let system = "";
@@ -73,7 +73,7 @@ export const runAI = createServerFn({ method: "POST" })
       const text = (await result.text).trim();
       if (data.mode === "translate") {
         const m = text.match(/^DETECTED:\s*([a-zA-Z-]+)\s*\n?([\s\S]*)$/);
-        return { text: m ? m[2].trim() : text, detected: m ? m[1].toLowerCase() : data.source };
+        return { text: m ? (m[2] ?? "").trim() : text, detected: m ? (m[1] ?? "").toLowerCase() : data.source };
       }
       return { text, detected: null as string | null };
     } catch (e: any) {

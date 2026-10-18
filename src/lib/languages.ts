@@ -6,7 +6,7 @@ export const LANGUAGES: { code: string; name: string; speech: string }[] = [
   ["pa", "Punjabi", "pa-IN"], ["id", "Indonesian", "id-ID"], ["nl", "Dutch", "nl-NL"], ["pl", "Polish", "pl-PL"],
   ["sv", "Swedish", "sv-SE"], ["el", "Greek", "el-GR"], ["he", "Hebrew", "he-IL"], ["th", "Thai", "th-TH"],
   ["vi", "Vietnamese", "vi-VN"], ["uk", "Ukrainian", "uk-UA"], ["ms", "Malay", "ms-MY"], ["sw", "Swahili", "sw-KE"],
-].map(([code, name, speech]) => ({ code, name, speech }));
+].map(([code, name, speech]) => ({ code: code!, name: name!, speech: speech! }));
 
 export const langName = (c?: string | null) => LANGUAGES.find((l) => l.code === c)?.name ?? c ?? "Auto";
 export const speechCode = (c: string) => LANGUAGES.find((l) => l.code === c)?.speech ?? c;
