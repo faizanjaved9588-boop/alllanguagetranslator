@@ -48,7 +48,8 @@ export const Route = createFileRoute("/app")({
   ),
 });
 
-async function ai(args: Omit<Parameters<typeof runAI>[0]["data"], "token">) {
+type AIArgs = { mode: "translate" | "grammar" | "speaking" | "chat"; text: string; source?: string; target: string; expected?: string; history?: { role: "user" | "assistant"; content: string }[] };
+async function ai(args: AIArgs) {
   return runAI({ data: { ...args, token: await getToken() } as any });
 }
 async function uid() { return (await supabase.auth.getUser()).data.user!.id; }
@@ -227,7 +228,7 @@ function Chat() {
         {msgs.map((m, i) => (
           <div key={i} className={m.role === "user" ? "ml-auto max-w-[80%] rounded-lg bg-primary p-3 text-primary-foreground" : "max-w-[80%] whitespace-pre-wrap"}>
             {m.content}
-            {m.role === "assistant" && <button className="ml-2 align-middle text-muted-foreground" onClick={() => tts.play(m.content.split("💡")[0], lang)}><Volume2 className="inline h-4 w-4" /></button>}
+            {m.role === "assistant" && <button className="ml-2 align-middle text-muted-foreground" onClick={() => tts.play(m.content.split("💡")[0] ?? "", lang)}><Volume2 className="inline h-4 w-4" /></button>}
           </div>
         ))}
         {busy && <p className="text-sm text-muted-foreground">Typing…</p>}
@@ -247,10 +248,10 @@ function Progress() {
     (async () => {
       const tables = ["translation_history", "speaking_sessions", "learning_feedback", "conversation_history"];
       const res = await Promise.all(tables.map((t) => supabase.from(t).select("id", { count: "exact", head: true })));
-      setC(Object.fromEntries(tables.map((t, i) => [t, res[i].count ?? 0])));
+      setC(Object.fromEntries(tables.map((t, i) => [t, res[i]?.count ?? 0])));
     })();
   }, []);
-  const items = [["Translations", c.translation_history], ["Speaking sessions", c.speaking_sessions], ["Feedback received", c.learning_feedback], ["Chat messages", c.conversation_history]];
+  const items = [["Translations", c["translation_history"]], ["Speaking sessions", c["speaking_sessions"]], ["Feedback received", c["learning_feedback"]], ["Chat messages", c["conversation_history"]]];
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {items.map(([l, n]) => (
