@@ -244,9 +244,13 @@ function Chat() {
         <div ref={end} />
       </div>
       <form className="mt-3 flex gap-2" onSubmit={(e) => { e.preventDefault(); send(); }}>
-        <Input autoFocus value={input} onChange={(e) => setInput(e.target.value)} placeholder="Type your message…" maxLength={2000} />
+        <Input autoFocus value={mic.status === "listening" ? mic.live : input} readOnly={mic.status === "listening"} onChange={(e) => setInput(e.target.value)} placeholder="Type or speak your message…" maxLength={2000} />
+        {mic.status === "listening"
+          ? <Button type="button" variant="destructive" size="icon" onClick={mic.stop}><Square className="h-4 w-4" /></Button>
+          : <Button type="button" variant="secondary" size="icon" onClick={() => mic.start(lang, input)}><Mic className="h-4 w-4" /></Button>}
         <Button disabled={busy}><Send className="h-4 w-4" /></Button>
       </form>
+      {mic.error && <p className="mt-1 text-sm text-destructive">{mic.error}</p>}
     </div>
   );
 }
