@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Keep microphone lifecycle in the shared useRecognition hook so all speaking inputs use the same cancellation, permission errors, and transcript handling.
+- Read and write app data and auth only through the generated Cloud client at `@/integrations/supabase/client`, and read backend addresses from environment variables inside handlers — never hand-roll a client or hardcode a backend URL or key, because the backend is provisioned per project and its address can change.
