@@ -4,6 +4,7 @@ import { Languages, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { session, loading } = useAuth();
@@ -24,6 +25,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Link to="/history" className="text-muted-foreground [&.active]:font-semibold [&.active]:text-foreground">History</Link>
           </nav>
           <div className="ml-auto flex items-center gap-2">
+            <ThemeToggle />
             <span className="hidden text-xs text-muted-foreground sm:inline">{session.user.email}</span>
             <Button size="sm" variant="ghost" onClick={() => supabase.auth.signOut()}>
               <LogOut className="h-4 w-4" />
