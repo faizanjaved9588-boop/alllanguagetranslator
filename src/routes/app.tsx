@@ -207,6 +207,7 @@ function Chat() {
   const [busy, setBusy] = useState(false);
   const end = useRef<HTMLDivElement>(null);
   const tts = useTTS();
+  const mic = useRecognition(useCallback((t: string) => setInput(t), []));
   useEffect(() => {
     (async () => {
       const { data, error } = await supabase.from("conversation_history").select("role,content").eq("language", lang).order("created_at").limit(50);
