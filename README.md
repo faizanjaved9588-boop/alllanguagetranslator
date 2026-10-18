@@ -27,3 +27,8 @@ npm run dev
 - TypeScript
 - React
 - Tailwind CSS
+
+## Setup (All Language Translator)
+1. In your Supabase dashboard → SQL Editor, run `db/schema.sql`.
+2. Copy `.env.example` values (Supabase URL + publishable key). `LOVABLE_API_KEY` is provided automatically on Lovable.
+3. Optional: disable "Confirm email" in Supabase Auth for instant sign-in.
