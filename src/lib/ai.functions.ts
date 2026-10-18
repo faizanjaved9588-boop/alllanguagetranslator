@@ -62,13 +62,10 @@ export const runAI = createServerFn({ method: "POST" })
         : [{ role: "user" as const, content: prompt }];
     try {
       const result = streamText({
-        model: openai.responses("openai/gpt-6-astra"),
+        model: openai("openai/gpt-5-mini"),
         system,
         messages,
         maxRetries: 0,
-        providerOptions: {
-          openai: { forceReasoning: true, reasoningEffort: "low", store: false, include: ["reasoning.encrypted_content"] },
-        },
       });
       const text = (await result.text).trim();
       if (data.mode === "translate") {

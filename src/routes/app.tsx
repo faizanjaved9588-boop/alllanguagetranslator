@@ -174,6 +174,7 @@ function Grammar() {
   const [text, setText] = useState("");
   const [fb, setFb] = useState("");
   const [busy, setBusy] = useState(false);
+  const mic = useRecognition(useCallback((t: string) => setText(t), []));
   const go = async () => {
     setBusy(true);
     try {
